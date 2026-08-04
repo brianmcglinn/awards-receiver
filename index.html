@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Awards Banquet — TV Display</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app" class="display">
+    <!-- receiver.js renders everything into here based on live_state -->
+  </div>
+
+  <!-- Audio element for walk-up songs and playlists — plays pre-resolved
+       Plex stream URLs that the sender app saved to the DB. -->
+  <audio id="plex-audio" preload="none"></audio>
+
+  <!-- Debug overlay: visit with ?debug=1 to see logs on screen, same as
+       draft-receiver — there's no DevTools access on an actual TV. -->
+  <button id="debug-play-btn" class="debug-play-btn hidden">▶ Test play current track</button>
+  <div id="debug-panel" class="debug-panel hidden"></div>
+
+  <!-- Cast Receiver SDK (CAF v3 — same version draft-receiver uses) -->
+  <script src="https://www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"></script>
+
+  <!-- Supabase JS client (UMD build, no bundler needed) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+
+  <script src="receiver.js"></script>
+</body>
+</html>

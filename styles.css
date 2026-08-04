@@ -1,0 +1,295 @@
+/* ============================================================================
+   DESIGN TOKENS
+   Subject: a league awards banquet, presented on a TV. Direction: "championship
+   night" — stadium-at-night navy, trophy gold, scoreboard-condensed type for
+   names/titles, a tabular mono for the record-book numbers in the Outro.
+   The one signature move: a slow gold spotlight glow behind a revealed winner.
+   ============================================================================ */
+:root {
+  --bg: #0b1220;
+  --panel: #131b2e;
+  --panel-border: #24314d;
+  --gold: #d4af37;
+  --gold-bright: #f2d675;
+  --text-primary: #f5f3ee;
+  --text-secondary: #8b93a7;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text-primary);
+  overflow: hidden;
+  font-family: "Inter", sans-serif;
+}
+
+.display {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6vh 6vw;
+  position: relative;
+}
+
+/* Eyebrow + heading banner — used for both Award names and Outro categories.
+   The eyebrow is a real sequence marker ("AWARD 3 OF 12"), not decoration. */
+.eyebrow {
+  font-family: "Inter", sans-serif;
+  font-size: 1.3vw;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 1vh;
+}
+
+.heading {
+  font-family: "Oswald", sans-serif;
+  font-weight: 600;
+  font-size: 6vw;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  text-align: center;
+  line-height: 1.05;
+  margin: 0 0 2vh 0;
+}
+
+.divider {
+  width: 12vw;
+  height: 3px;
+  background: var(--gold);
+  margin-bottom: 5vh;
+  border-radius: 2px;
+}
+
+/* ---- Nominees grid ---- */
+.nominee-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18vw, 1fr));
+  gap: 3vw;
+  width: 100%;
+  max-width: 90vw;
+}
+
+.nominee-card {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  padding: 2.5vh 1.5vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5vh;
+}
+
+.nominee-logo {
+  width: 9vw;
+  height: 9vw;
+  border-radius: 12px;
+  object-fit: cover;
+  background: var(--panel-border);
+}
+
+.nominee-name {
+  font-family: "Inter", sans-serif;
+  font-weight: 600;
+  font-size: 1.6vw;
+  text-align: center;
+}
+
+/* ---- Winner reveal — the one signature moment ---- */
+.winner-stage {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4vw;
+}
+
+.winner-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2vh;
+  animation: winner-in 900ms ease-out;
+}
+
+.winner-card::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 26vw;
+  height: 26vw;
+  transform: translate(-50%, -60%);
+  background: radial-gradient(circle, rgba(212, 175, 55, 0.35) 0%, rgba(212, 175, 55, 0) 70%);
+  animation: glow-pulse 2.4s ease-in-out infinite;
+  z-index: 0;
+}
+
+.winner-logo {
+  width: 14vw;
+  height: 14vw;
+  border-radius: 16px;
+  object-fit: cover;
+  background: var(--panel-border);
+  border: 2px solid var(--gold);
+  position: relative;
+  z-index: 1;
+}
+
+.winner-name {
+  font-family: "Oswald", sans-serif;
+  font-weight: 600;
+  font-size: 3vw;
+  color: var(--gold-bright);
+  text-transform: uppercase;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes winner-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes glow-pulse {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ---- Outro ledger ---- */
+.ledger {
+  width: 100%;
+  max-width: 70vw;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6vh;
+}
+
+.ledger-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 1.4vh 1.2vw;
+  border-radius: 8px;
+}
+
+.ledger-row:nth-child(odd) {
+  background: rgba(19, 27, 46, 0.6);
+}
+
+.ledger-label {
+  font-family: "Inter", sans-serif;
+  font-size: 1.8vw;
+  font-weight: 500;
+}
+
+.ledger-value {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 1.8vw;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Intro ---- */
+.intro-text {
+  font-family: "Oswald", sans-serif;
+  font-size: 3.5vw;
+  text-align: center;
+  max-width: 80vw;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.intro-image {
+  max-width: 60vw;
+  max-height: 45vh;
+  object-fit: contain;
+  border-radius: 16px;
+  margin-top: 4vh;
+  opacity: 0;
+  transition: opacity 1.2s ease-in-out;
+}
+
+.intro-image.visible {
+  opacity: 1;
+}
+
+/* ---- End ---- */
+.end-text {
+  font-family: "Oswald", sans-serif;
+  font-size: 4vw;
+  color: var(--gold-bright);
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.award-image {
+  max-width: 30vw;
+  max-height: 30vh;
+  object-fit: contain;
+  border-radius: 12px;
+  margin-bottom: 3vh;
+}
+
+/* ---- Debug overlay (?debug=1) ---- */
+.hidden {
+  display: none !important;
+}
+
+.debug-panel {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-height: 32vh;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.88);
+  color: #7cfc00;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 10px 14px;
+  z-index: 9999;
+  white-space: pre-wrap;
+  border-top: 1px solid rgba(124, 252, 0, 0.3);
+}
+
+.debug-play-btn {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 10000;
+  background: var(--gold);
+  color: #0b1220;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
