@@ -25,8 +25,8 @@ log("Booting receiver…");
 // Served publicly from GitHub Pages, same as your other custom receivers.
 // ============================================================================
 const CONFIG = {
-SUPABASE_URL: "https://njmhtzlarzxghldpnkct.supabase.co",
- SUPABASE_ANON_KEY: "sb_publishable_Malyz9S1E2VvxZD98T69tg_jjDSb8Ea",
+  SUPABASE_URL: "https://njmhtzlarzxghldpnkct.supabase.co",
+  SUPABASE_ANON_KEY: "sb_publishable_Malyz9S1E2VvxZD98T69tg_jjDSb8Ea",
 };
 
 if (CONFIG.SUPABASE_URL.includes("YOUR-PROJECT") || CONFIG.SUPABASE_ANON_KEY.includes("YOUR-ANON")) {
@@ -259,8 +259,10 @@ function renderOutro(category, entries, outroConfig) {
   startPlaylist(`outro:${outroConfig?.playlist_label ?? ""}`, outroConfig?.playlist_tracks);
 }
 
-function renderEnd() {
-  app.innerHTML = `<div class="end-text">That's a wrap!</div>`;
+function renderEnd(outroConfig) {
+  const text = outroConfig?.end_text || "That's a Wrap!";
+  const color = outroConfig?.end_text_color || "#F2D675";
+  app.innerHTML = `<div class="end-text" style="color:${escapeHtml(color)}">${escapeHtml(text)}</div>`;
 }
 
 // ============================================================================
@@ -323,7 +325,7 @@ async function renderCurrentState() {
     if (myGeneration !== renderGeneration) return;
     renderOutro(category, entries, outroConfig);
   } else if (liveState.section === "end") {
-    renderEnd();
+    renderEnd(outroConfig);
     // Deliberately not touching the playlist here — the Outro music keeps
     // playing through the closing screen until Stop Music is pressed or the
     // Cast session ends, per how the banquet should close out.

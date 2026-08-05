@@ -325,7 +325,6 @@ body {
 .end-text {
   font-family: "Oswald", sans-serif;
   font-size: 4vw;
-  color: var(--gold-bright);
   text-transform: uppercase;
   text-align: center;
 }
