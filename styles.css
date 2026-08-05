@@ -159,6 +159,16 @@ body {
   z-index: 1;
 }
 
+.winner-stat {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 1.6vw;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
 @keyframes winner-in {
   from {
     opacity: 0;

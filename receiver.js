@@ -169,6 +169,7 @@ function renderAward(award, nominees, phase) {
           <div class="winner-card">
             ${w.owner?.logo_url ? `<img class="winner-logo" src="${escapeHtml(w.owner.logo_url)}" />` : `<div class="winner-logo"></div>`}
             <div class="winner-name">${escapeHtml(w.owner?.team_name)}</div>
+            ${w.stat_text ? `<div class="winner-stat">${escapeHtml(w.stat_text)}</div>` : ""}
           </div>`
           )
           .join("")}
@@ -180,6 +181,19 @@ function renderAward(award, nominees, phase) {
       .filter((w) => w.owner?.walkup_song_stream_url)
       .map((w) => ({ title: w.owner.walkup_song_label || w.owner.team_name, streamUrl: w.owner.walkup_song_stream_url }));
     startPlaylist(`winner:${award.id}`, tracks);
+    return;
+  }
+
+  // Pre-reveal phase. Most awards have show_nominees = false — a single
+  // clear winner (or tied co-winners) with nothing shown until Reveal Winner
+  // is pressed, so this renders just the heading with no grid at all.
+  if (!award.show_nominees) {
+    app.innerHTML = `
+      ${award.image_url ? `<img class="award-image" src="${escapeHtml(award.image_url)}" />` : ""}
+      <h1 class="heading" style="color:${escapeHtml(award.award_name_color)}">${escapeHtml(award.award_name)}</h1>
+      <div class="divider"></div>
+    `;
+    startPlaylist(`nominees:${award.id}`, []);
     return;
   }
 
