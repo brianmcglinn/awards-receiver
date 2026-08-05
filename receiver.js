@@ -25,8 +25,8 @@ log("Booting receiver…");
 // Served publicly from GitHub Pages, same as your other custom receivers.
 // ============================================================================
 const CONFIG = {
-  SUPABASE_URL: "https://njmhtzlarzxghldpnkct.supabase.co",
-  SUPABASE_ANON_KEY: "sb_publishable_Malyz9S1E2VvxZD98T69tg_jjDSb8Ea",
+ SUPABASE_URL: "https://njmhtzlarzxghldpnkct.supabase.co",
+ SUPABASE_ANON_KEY: "sb_publishable_Malyz9S1E2VvxZD98T69tg_jjDSb8Ea",
 };
 
 if (CONFIG.SUPABASE_URL.includes("YOUR-PROJECT") || CONFIG.SUPABASE_ANON_KEY.includes("YOUR-ANON")) {
@@ -91,6 +91,7 @@ log("Supabase client created for", CONFIG.SUPABASE_URL);
 let playlistTracks = []; // [{ title, streamUrl }]
 let playlistIndex = 0;
 let currentSectionKey = null; // dedupe so unrelated row updates don't restart audio
+let musicStopped = false; // set from live_state.music_stopped, independent of section
 
 function playTrack(index) {
   if (!playlistTracks.length) return;
@@ -110,7 +111,14 @@ audioEl.addEventListener("ended", () => {
 
 // Starts a playlist only if it's not already the one playing, so an
 // unrelated Realtime update doesn't restart the song from the beginning.
+// If music has been stopped from the Live tab, this no-ops (and pauses)
+// regardless of section, until it's resumed.
 function startPlaylist(sectionKey, tracks) {
+  if (musicStopped) {
+    audioEl.pause();
+    currentSectionKey = null; // so playback picks back up correctly once resumed
+    return;
+  }
   if (currentSectionKey === sectionKey) return;
   currentSectionKey = sectionKey;
   playlistTracks = tracks || [];
@@ -137,6 +145,7 @@ function renderIntro(introConfig) {
   app.innerHTML = `
     ${introConfig?.intro_text ? `<div class="intro-text" style="color:${escapeHtml(introConfig.intro_text_color)}">${escapeHtml(introConfig.intro_text)}</div>` : ""}
     ${images.length ? `<img class="intro-image visible" id="intro-img" src="${escapeHtml(images[0])}" />` : ""}
+    ${introConfig?.jumbotron_text ? `<div class="jumbotron-text" style="color:${escapeHtml(introConfig.jumbotron_text_color)}; text-shadow: 0 0 20px ${escapeHtml(introConfig.jumbotron_text_color)}, 0 0 40px ${escapeHtml(introConfig.jumbotron_text_color)};">${escapeHtml(introConfig.jumbotron_text)}</div>` : ""}
   `;
   if (images.length > 1) {
     let idx = 0;
@@ -159,7 +168,7 @@ function renderAward(award, nominees, phase) {
 
   if (phase === "winner" && winners.length > 0) {
     app.innerHTML = `
-      <div class="eyebrow">Winner</div>
+      ${award.reveal_label ? `<div class="eyebrow">${escapeHtml(award.reveal_label)}</div>` : ""}
       <h1 class="heading" style="color:${escapeHtml(award.award_name_color)}">${escapeHtml(award.award_name)}</h1>
       <div class="divider"></div>
       <div class="winner-stage">
@@ -201,13 +210,14 @@ function renderAward(award, nominees, phase) {
     ${award.image_url ? `<img class="award-image" src="${escapeHtml(award.image_url)}" />` : ""}
     <h1 class="heading" style="color:${escapeHtml(award.award_name_color)}">${escapeHtml(award.award_name)}</h1>
     <div class="divider"></div>
-    <div class="nominee-grid">
+    <div class="nominee-stage">
       ${nominees
         .map(
           (n) => `
         <div class="nominee-card">
           ${n.owner?.logo_url ? `<img class="nominee-logo" src="${escapeHtml(n.owner.logo_url)}" />` : `<div class="nominee-logo"></div>`}
           <div class="nominee-name">${escapeHtml(n.owner?.team_name)}</div>
+          ${n.stat_text ? `<div class="nominee-stat">${escapeHtml(n.stat_text)}</div>` : ""}
         </div>`
         )
         .join("")}
@@ -283,7 +293,8 @@ async function renderCurrentState() {
     return;
   }
   latestLiveState = liveState;
-  log("section =", liveState.section);
+  musicStopped = !!liveState.music_stopped;
+  log("section =", liveState.section, "| music stopped =", musicStopped);
 
   if (liveState.section === "intro") {
     renderIntro(introConfig);
@@ -299,7 +310,9 @@ async function renderCurrentState() {
     renderOutro(category, entries, outroConfig);
   } else if (liveState.section === "end") {
     renderEnd();
-    startPlaylist("end", []);
+    // Deliberately not touching the playlist here — the Outro music keeps
+    // playing through the closing screen until Stop Music is pressed or the
+    // Cast session ends, per how the banquet should close out.
   }
 }
 
