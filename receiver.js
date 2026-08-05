@@ -268,12 +268,7 @@ function renderOutro(category, entries, outroConfig) {
 function renderEnd(outroConfig) {
   const text = outroConfig?.end_text || "That's a Wrap!";
   const color = outroConfig?.end_text_color || "#F2D675";
-  const jumboText = outroConfig?.end_jumbotron_text;
-  const jumboColor = outroConfig?.end_jumbotron_text_color || "#D4AF37";
-  app.innerHTML = `
-    <div class="end-text" style="color:${escapeHtml(color)}">${escapeHtml(text)}</div>
-    ${jumboText ? `<div class="jumbotron-text" style="color:${escapeHtml(jumboColor)}; text-shadow: 0 0 20px ${escapeHtml(jumboColor)}, 0 0 40px ${escapeHtml(jumboColor)};">${escapeHtml(jumboText)}</div>` : ""}
-  `;
+  app.innerHTML = `<div class="end-text" style="color:${escapeHtml(color)}">${escapeHtml(text)}</div>`;
 }
 
 // ============================================================================
