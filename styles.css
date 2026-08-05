@@ -117,6 +117,46 @@ body {
   text-align: center;
 }
 
+/* Size tiers for larger nominee counts (e.g. every owner nominated for an
+   award) — same layout, just scaled down so it stays readable without
+   pagination or a carousel. */
+.nominee-stage--medium .nominee-card {
+  width: 13vw;
+  padding: 1.8vh 1vw;
+  gap: 1vh;
+}
+.nominee-stage--medium .nominee-logo {
+  width: 6.5vw;
+  height: 6.5vw;
+}
+.nominee-stage--medium .nominee-name {
+  font-size: 1.3vw;
+}
+.nominee-stage--medium .nominee-stat {
+  font-size: 1.05vw;
+}
+
+.nominee-stage--compact {
+  gap: 1.8vw;
+}
+.nominee-stage--compact .nominee-card {
+  width: 10vw;
+  padding: 1.2vh 0.8vw;
+  gap: 0.6vh;
+  border-radius: 10px;
+}
+.nominee-stage--compact .nominee-logo {
+  width: 5vw;
+  height: 5vw;
+  border-radius: 8px;
+}
+.nominee-stage--compact .nominee-name {
+  font-size: 1.05vw;
+}
+.nominee-stage--compact .nominee-stat {
+  font-size: 0.85vw;
+}
+
 /* ---- Winner reveal — the one signature moment ---- */
 .winner-stage {
   display: flex;

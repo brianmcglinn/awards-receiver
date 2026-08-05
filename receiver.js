@@ -25,7 +25,7 @@ log("Booting receiver…");
 // Served publicly from GitHub Pages, same as your other custom receivers.
 // ============================================================================
 const CONFIG = {
- SUPABASE_URL: "https://njmhtzlarzxghldpnkct.supabase.co",
+SUPABASE_URL: "https://njmhtzlarzxghldpnkct.supabase.co",
  SUPABASE_ANON_KEY: "sb_publishable_Malyz9S1E2VvxZD98T69tg_jjDSb8Ea",
 };
 
@@ -140,6 +140,15 @@ function escapeHtml(str) {
   return (str ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
+// Nominee cards scale down automatically as the count grows, so a big award
+// with all 12 owners nominated doesn't try to cram 12 full-size cards on
+// screen — no pagination/carousel needed, just responsive sizing.
+function nomineeSizeClass(count) {
+  if (count > 8) return "nominee-stage--compact";
+  if (count > 4) return "nominee-stage--medium";
+  return "";
+}
+
 function renderIntro(introConfig) {
   const images = introConfig?.image_urls || [];
   app.innerHTML = `
@@ -210,7 +219,7 @@ function renderAward(award, nominees, phase) {
     ${award.image_url ? `<img class="award-image" src="${escapeHtml(award.image_url)}" />` : ""}
     <h1 class="heading" style="color:${escapeHtml(award.award_name_color)}">${escapeHtml(award.award_name)}</h1>
     <div class="divider"></div>
-    <div class="nominee-stage">
+    <div class="nominee-stage ${nomineeSizeClass(nominees.length)}">
       ${nominees
         .map(
           (n) => `
@@ -258,6 +267,7 @@ function renderEnd() {
 // MAIN LOOP
 // ============================================================================
 let latestLiveState = null;
+let renderGeneration = 0; // guards against a slower, older render finishing after a newer one
 
 async function fetchCore() {
   const [{ data: liveState }, { data: awards }, { data: outroCategories }, { data: introConfig }, { data: outroConfig }] =
@@ -286,8 +296,10 @@ async function fetchOutroEntries(categoryId) {
 }
 
 async function renderCurrentState() {
+  const myGeneration = ++renderGeneration;
   log("Rendering current state…");
   const { liveState, awards, outroCategories, introConfig, outroConfig } = await fetchCore();
+  if (myGeneration !== renderGeneration) return; // a newer render started while this one was fetching
   if (!liveState) {
     log("⚠️ No live_state row found.");
     return;
@@ -302,11 +314,13 @@ async function renderCurrentState() {
     const award = awards.find((a) => a.id === liveState.current_award_id);
     if (!award) return;
     const nominees = await fetchAwardNominees(award.id);
+    if (myGeneration !== renderGeneration) return;
     renderAward(award, nominees, liveState.award_phase);
   } else if (liveState.section === "outro") {
     const category = outroCategories.find((c) => c.id === liveState.current_outro_category_id);
     if (!category) return;
     const entries = await fetchOutroEntries(category.id);
+    if (myGeneration !== renderGeneration) return;
     renderOutro(category, entries, outroConfig);
   } else if (liveState.section === "end") {
     renderEnd();
