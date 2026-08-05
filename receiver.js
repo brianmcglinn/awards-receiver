@@ -106,7 +106,10 @@ function playTrack(index) {
 }
 
 audioEl.addEventListener("ended", () => {
-  if (playlistTracks.length > 1) playTrack(playlistIndex + 1);
+  // Loops even a single-track "playlist" (e.g. one pre-reveal song, or a
+  // background playlist someone only added one track to) rather than just
+  // falling silent after the first play.
+  if (playlistTracks.length > 0) playTrack(playlistIndex + 1);
 });
 
 // Starts a playlist only if it's not already the one playing, so an
@@ -174,6 +177,9 @@ function renderIntro(introConfig) {
 
 function renderAward(award, nominees, phase) {
   const winners = nominees.filter((n) => n.is_winner);
+  const preRevealTracks = award.pre_reveal_song_stream_url
+    ? [{ title: award.pre_reveal_song_label || "Pre-reveal song", streamUrl: award.pre_reveal_song_stream_url }]
+    : [];
 
   if (phase === "winner" && winners.length > 0) {
     app.innerHTML = `
@@ -193,8 +199,9 @@ function renderAward(award, nominees, phase) {
           .join("")}
       </div>
     `;
-    // Walk-up songs, back to back if there's more than one co-winner —
-    // these are per-owner stream URLs, resolved ahead of time in the app.
+    // Walk-up songs take over immediately on reveal — this key differs from
+    // the pre-reveal key below, so the pre-reveal song (if any) stops here
+    // rather than continuing under the walk-up song.
     const tracks = winners
       .filter((w) => w.owner?.walkup_song_stream_url)
       .map((w) => ({ title: w.owner.walkup_song_label || w.owner.team_name, streamUrl: w.owner.walkup_song_stream_url }));
@@ -211,7 +218,7 @@ function renderAward(award, nominees, phase) {
       <h1 class="heading" style="color:${escapeHtml(award.award_name_color)}">${escapeHtml(award.award_name)}</h1>
       <div class="divider"></div>
     `;
-    startPlaylist(`nominees:${award.id}`, []);
+    startPlaylist(`nominees:${award.id}`, preRevealTracks);
     return;
   }
 
@@ -232,8 +239,7 @@ function renderAward(award, nominees, phase) {
         .join("")}
     </div>
   `;
-  // No audio during nominees — silence between the reveal moments.
-  startPlaylist(`nominees:${award.id}`, []);
+  startPlaylist(`nominees:${award.id}`, preRevealTracks);
 }
 
 function renderOutro(category, entries, outroConfig) {
@@ -262,7 +268,12 @@ function renderOutro(category, entries, outroConfig) {
 function renderEnd(outroConfig) {
   const text = outroConfig?.end_text || "That's a Wrap!";
   const color = outroConfig?.end_text_color || "#F2D675";
-  app.innerHTML = `<div class="end-text" style="color:${escapeHtml(color)}">${escapeHtml(text)}</div>`;
+  const jumboText = outroConfig?.end_jumbotron_text;
+  const jumboColor = outroConfig?.end_jumbotron_text_color || "#D4AF37";
+  app.innerHTML = `
+    <div class="end-text" style="color:${escapeHtml(color)}">${escapeHtml(text)}</div>
+    ${jumboText ? `<div class="jumbotron-text" style="color:${escapeHtml(jumboColor)}; text-shadow: 0 0 20px ${escapeHtml(jumboColor)}, 0 0 40px ${escapeHtml(jumboColor)};">${escapeHtml(jumboText)}</div>` : ""}
+  `;
 }
 
 // ============================================================================
