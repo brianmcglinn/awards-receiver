@@ -25,8 +25,8 @@ log("Booting receiver…");
 // Served publicly from GitHub Pages, same as your other custom receivers.
 // ============================================================================
 const CONFIG = {
-  SUPABASE_URL: "https://njmhtzlarzxghldpnkct.supabase.co",
-  SUPABASE_ANON_KEY: "sb_publishable_Malyz9S1E2VvxZD98T69tg_jjDSb8Ea",
+  SUPABASE_URL: "https://YOUR-PROJECT-REF.supabase.co",
+  SUPABASE_ANON_KEY: "YOUR-ANON-KEY",
 };
 
 if (CONFIG.SUPABASE_URL.includes("YOUR-PROJECT") || CONFIG.SUPABASE_ANON_KEY.includes("YOUR-ANON")) {
@@ -84,25 +84,103 @@ const sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANO
 log("Supabase client created for", CONFIG.SUPABASE_URL);
 
 // ============================================================================
-// AUDIO — plays pre-resolved Plex stream URLs stored in the DB. No Plex API
-// calls happen here at all; the sender app resolved everything at
-// configuration time (same division of labor as draft-sender/draft-receiver).
+// AUDIO — plays pre-resolved Plex stream URLs stored in the DB. The sender
+// app resolved everything at configuration time and always stores the
+// PUBLIC stream URL, since that's the one that needs to work wherever the
+// event actually is. But when this receiver happens to be on the same home
+// network as the Plex server (e.g. testing at home, or draft night), that
+// public URL hits NAT loopback — your own router can't route a request
+// back in to your own public IP. So: derive a local-network equivalent of
+// each stream URL on the fly (the part-key/token in the URL path don't
+// depend on which server address you use) and try that first, falling back
+// to the stored public URL if local doesn't pan out within a few seconds.
 // ============================================================================
+let localPlexBaseUrl = null; // fetched once below; stays null if not configured
+
+async function loadLocalPlexBaseUrl() {
+  try {
+    const { data } = await sb.from("plex_settings").select("plex_local_url").eq("id", 1).single();
+    if (data?.plex_local_url) {
+      localPlexBaseUrl = data.plex_local_url;
+      log("Local Plex URL loaded:", localPlexBaseUrl);
+    }
+  } catch (e) {
+    log("Couldn't load local Plex URL (will just use public URLs):", e.message);
+  }
+}
+loadLocalPlexBaseUrl();
+
+function deriveLocalStreamUrl(publicStreamUrl) {
+  if (!localPlexBaseUrl) return null;
+  try {
+    const parsed = new URL(publicStreamUrl);
+    return `${localPlexBaseUrl}${parsed.pathname}${parsed.search}`;
+  } catch {
+    return null;
+  }
+}
+
+const LOCAL_AUDIO_TIMEOUT_MS = 4000;
+
 let playlistTracks = []; // [{ title, streamUrl }]
 let playlistIndex = 0;
 let currentSectionKey = null; // dedupe so unrelated row updates don't restart audio
 let musicStopped = false; // set from live_state.music_stopped, independent of section
+
+function playFromUrl(url, title) {
+  audioEl.src = url;
+  audioEl.currentTime = 0;
+  audioEl.play()
+    .then(() => log("▶️ Playing:", title))
+    .catch((err) => log("❌ Playback failed:", err.message, "(often needs one click on the page first when testing in a plain browser tab)"));
+}
 
 function playTrack(index) {
   if (!playlistTracks.length) return;
   playlistIndex = ((index % playlistTracks.length) + playlistTracks.length) % playlistTracks.length;
   const track = playlistTracks[playlistIndex];
   lastKnownStreamUrl = track.streamUrl;
-  audioEl.src = track.streamUrl;
+
+  const localUrl = deriveLocalStreamUrl(track.streamUrl);
+  if (!localUrl) {
+    playFromUrl(track.streamUrl, track.title);
+    return;
+  }
+
+  // Try local first. NAT loopback typically means the public URL just hangs
+  // with no response at all rather than failing fast, so this needs an
+  // explicit timeout as a backstop, not just an error listener.
+  let settled = false;
+  const cleanup = () => {
+    clearTimeout(timer);
+    audioEl.removeEventListener("playing", onPlaying);
+    audioEl.removeEventListener("error", onFail);
+  };
+  const onFail = () => {
+    if (settled) return;
+    settled = true;
+    cleanup();
+    log("Local audio didn't come through, falling back to public URL:", track.title);
+    playFromUrl(track.streamUrl, track.title);
+  };
+  const onPlaying = () => {
+    if (settled) return;
+    settled = true;
+    cleanup();
+    log("▶️ Playing via local URL:", track.title);
+  };
+
+  const timer = setTimeout(onFail, LOCAL_AUDIO_TIMEOUT_MS);
+  audioEl.addEventListener("playing", onPlaying);
+  audioEl.addEventListener("error", onFail);
+
+  audioEl.src = localUrl;
   audioEl.currentTime = 0;
-  audioEl.play()
-    .then(() => log("▶️ Playing:", track.title))
-    .catch((err) => log("❌ Playback failed:", err.message, "(often needs one click on the page first when testing in a plain browser tab)"));
+  audioEl.play().catch(() => {
+    // A rejected play() promise here isn't necessarily "local failed" (can
+    // also be a browser autoplay policy quirk in a plain tab) — the
+    // timeout/error/playing listeners above are the real source of truth.
+  });
 }
 
 audioEl.addEventListener("ended", () => {
