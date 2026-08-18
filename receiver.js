@@ -25,8 +25,8 @@ log("Booting receiver…");
 // Served publicly from GitHub Pages, same as your other custom receivers.
 // ============================================================================
 const CONFIG = {
-  SUPABASE_URL: "https://YOUR-PROJECT-REF.supabase.co",
-  SUPABASE_ANON_KEY: "YOUR-ANON-KEY",
+  SUPABASE_URL: "https://njmhtzlarzxghldpnkct.supabase.co",
+  SUPABASE_ANON_KEY: "sb_publishable_Malyz9S1E2VvxZD98T69tg_jjDSb8Ea",
 };
 
 if (CONFIG.SUPABASE_URL.includes("YOUR-PROJECT") || CONFIG.SUPABASE_ANON_KEY.includes("YOUR-ANON")) {
