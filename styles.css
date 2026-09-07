@@ -162,6 +162,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
+  align-items: flex-start;
   gap: 4vw;
 }
 
@@ -179,17 +180,22 @@ body {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 26vw;
-  height: 26vw;
+  width: min(50vw, 78vh);
+  height: min(50vw, 78vh);
   transform: translate(-50%, -60%);
   background: radial-gradient(circle, rgba(212, 175, 55, 0.35) 0%, rgba(212, 175, 55, 0) 70%);
   animation: glow-pulse 2.4s ease-in-out infinite;
   z-index: 0;
 }
 
+/* Base size is for a single winner — the common case, sized big to be the
+   hero moment. min() caps by whichever is tighter, width or height, so this
+   can never overflow/clip regardless of exact screen proportions (the
+   display has overflow:hidden, so anything too big would be cut off rather
+   than just scrollable). */
 .winner-logo {
-  width: 14vw;
-  height: 14vw;
+  width: min(32vw, 48vh);
+  height: min(32vw, 48vh);
   border-radius: 16px;
   object-fit: cover;
   background: var(--panel-border);
@@ -201,7 +207,7 @@ body {
 .winner-name {
   font-family: "Oswald", sans-serif;
   font-weight: 600;
-  font-size: 3vw;
+  font-size: min(3.4vw, 5vh);
   color: var(--gold-bright);
   text-transform: uppercase;
   text-align: center;
@@ -211,12 +217,84 @@ body {
 
 .winner-stat {
   font-family: "IBM Plex Mono", monospace;
-  font-size: 1.6vw;
+  font-size: min(1.8vw, 2.6vh);
   font-weight: 600;
   color: var(--text-primary);
   text-align: center;
   position: relative;
   z-index: 1;
+}
+
+/* Two co-winners (a tie) — still prominent, scaled to sit comfortably
+   side by side rather than overflowing. */
+.winner-stage--duo .winner-card::before {
+  width: min(33vw, 52vh);
+  height: min(33vw, 52vh);
+}
+.winner-stage--duo .winner-logo {
+  width: min(21vw, 35vh);
+  height: min(21vw, 35vh);
+}
+.winner-stage--duo .winner-name {
+  font-size: min(2.6vw, 4vh);
+}
+.winner-stage--duo .winner-stat {
+  font-size: min(1.5vw, 2.2vh);
+}
+
+/* Three or more co-winners — rare, but sized smaller so the whole group
+   still fits without crowding or clipping. */
+.winner-stage--multi .winner-card::before {
+  width: min(22vw, 35vh);
+  height: min(22vw, 35vh);
+}
+.winner-stage--multi .winner-logo {
+  width: min(14vw, 24vh);
+  height: min(14vw, 24vh);
+}
+.winner-stage--multi .winner-name {
+  font-size: min(2vw, 3vh);
+}
+.winner-stage--multi .winner-stat {
+  font-size: min(1.1vw, 1.7vh);
+}
+
+/* No stat text on any winner — that line doesn't need to compete for
+   vertical room, so go bigger still. Compound selectors (no space between
+   the two class names) give these higher specificity than the plain
+   --duo/--multi rules above, so they correctly win when both apply to the
+   same element rather than losing to source order. */
+.winner-stage--no-stat .winner-logo {
+  width: min(36vw, 54vh);
+  height: min(36vw, 54vh);
+}
+.winner-stage--no-stat .winner-card::before {
+  width: min(58vw, 88vh);
+  height: min(58vw, 88vh);
+}
+.winner-stage--no-stat .winner-name {
+  font-size: min(3.8vw, 5.6vh);
+}
+
+.winner-stage--duo.winner-stage--no-stat .winner-logo {
+  width: min(24vw, 40vh);
+  height: min(24vw, 40vh);
+}
+.winner-stage--duo.winner-stage--no-stat .winner-card::before {
+  width: min(36vw, 60vh);
+  height: min(36vw, 60vh);
+}
+.winner-stage--duo.winner-stage--no-stat .winner-name {
+  font-size: min(2.9vw, 4.4vh);
+}
+
+.winner-stage--multi.winner-stage--no-stat .winner-logo {
+  width: min(16vw, 27vh);
+  height: min(16vw, 27vh);
+}
+.winner-stage--multi.winner-stage--no-stat .winner-card::before {
+  width: min(23vw, 40vh);
+  height: min(23vw, 40vh);
 }
 
 @keyframes winner-in {

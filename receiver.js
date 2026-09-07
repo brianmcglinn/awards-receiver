@@ -230,6 +230,19 @@ function nomineeSizeClass(count) {
   return "";
 }
 
+// Winner reveal defaults to a big, single-hero-sized logo (the common case —
+// one winner, or a team intro). Scales down automatically for co-winner
+// ties so the group still fits without crowding or clipping. Goes bigger
+// still when none of the winners have stat text — that line needs its own
+// vertical room, so skipping it frees up space for the logo instead.
+function winnerSizeClass(count, hasStatText) {
+  let sizeClass = "";
+  if (count >= 3) sizeClass = "winner-stage--multi";
+  else if (count === 2) sizeClass = "winner-stage--duo";
+  if (!hasStatText) sizeClass += " winner-stage--no-stat";
+  return sizeClass.trim();
+}
+
 function renderIntro(introConfig) {
   const images = introConfig?.image_urls || [];
   app.innerHTML = `
@@ -260,11 +273,12 @@ function renderAward(award, nominees, phase) {
     : [];
 
   if (phase === "winner" && winners.length > 0) {
+    const hasStatText = winners.some((w) => !!w.stat_text);
     app.innerHTML = `
       ${award.reveal_label ? `<div class="eyebrow">${escapeHtml(award.reveal_label)}</div>` : ""}
       <h1 class="heading" style="color:${escapeHtml(award.award_name_color)}">${escapeHtml(award.award_name)}</h1>
       <div class="divider"></div>
-      <div class="winner-stage">
+      <div class="winner-stage ${winnerSizeClass(winners.length, hasStatText)}">
         ${winners
           .map(
             (w) => `
