@@ -92,26 +92,64 @@ log("Supabase client created for", CONFIG.SUPABASE_URL);
 // public URL hits NAT loopback — your own router can't route a request
 // back in to your own public IP. So: derive a local-network equivalent of
 // each stream URL on the fly (the part-key/token in the URL path don't
-// depend on which server address you use) and try that first, falling back
-// to the stored public URL if local doesn't pan out within a few seconds.
+// depend on which server address you use).
+//
+// Reachability is checked ONCE at startup, not per-song. A network that
+// happens to share your home's subnet (very common default ranges like
+// 192.168.1.x) can make a doomed connection attempt to the local address
+// hang for the full timeout instead of failing fast — fine to eat that
+// delay once while the receiver is booting, but not on every single reveal
+// during the actual event.
 // ============================================================================
-let localPlexBaseUrl = null; // fetched once below; stays null if not configured
+let localPlexBaseUrl = null; // set once below; stays null if not configured
+let localPlexReachable = false; // determined once below; playback trusts this, doesn't recheck per-song
+const LOCAL_AUDIO_TIMEOUT_MS = 4000;
 
 async function loadLocalPlexBaseUrl() {
   try {
-    const { data } = await sb.from("plex_settings").select("plex_local_url").eq("id", 1).single();
-    if (data?.plex_local_url) {
-      localPlexBaseUrl = data.plex_local_url;
-      log("Local Plex URL loaded:", localPlexBaseUrl);
-    }
+    const { data } = await sb.from("plex_settings").select("plex_local_url, plex_token").eq("id", 1).single();
+    if (!data?.plex_local_url) return;
+    localPlexBaseUrl = data.plex_local_url;
+    log("Local Plex URL configured:", localPlexBaseUrl, "\u2014 checking reachability\u2026");
+    localPlexReachable = await checkLocalReachability(localPlexBaseUrl, data.plex_token);
+    log(
+      localPlexReachable
+        ? "Local Plex server is reachable on this network \u2014 will use it for playback."
+        : "Local Plex server is NOT reachable on this network \u2014 using the public URL for all playback this session."
+    );
   } catch (e) {
-    log("Couldn't load local Plex URL (will just use public URLs):", e.message);
+    log("Couldn't check local Plex reachability (will just use public URLs):", e.message);
   }
 }
+
+function checkLocalReachability(baseUrl, token) {
+  return new Promise((resolve) => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      resolve(false);
+    }, LOCAL_AUDIO_TIMEOUT_MS);
+    fetch(`${baseUrl}/?X-Plex-Token=${token}`, { headers: { Accept: "application/json" } })
+      .then((res) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(res.ok);
+      })
+      .catch(() => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(false);
+      });
+  });
+}
+
 loadLocalPlexBaseUrl();
 
 function deriveLocalStreamUrl(publicStreamUrl) {
-  if (!localPlexBaseUrl) return null;
+  if (!localPlexBaseUrl || !localPlexReachable) return null;
   try {
     const parsed = new URL(publicStreamUrl);
     return `${localPlexBaseUrl}${parsed.pathname}${parsed.search}`;
@@ -119,8 +157,6 @@ function deriveLocalStreamUrl(publicStreamUrl) {
     return null;
   }
 }
-
-const LOCAL_AUDIO_TIMEOUT_MS = 4000;
 
 let playlistTracks = []; // [{ title, streamUrl }]
 let playlistIndex = 0;
@@ -147,9 +183,9 @@ function playTrack(index) {
     return;
   }
 
-  // Try local first. NAT loopback typically means the public URL just hangs
-  // with no response at all rather than failing fast, so this needs an
-  // explicit timeout as a backstop, not just an error listener.
+  // Local was already confirmed reachable at startup, but individual
+  // requests can still hiccup — keep a short per-song safety net rather
+  // than trusting it blindly.
   let settled = false;
   const cleanup = () => {
     clearTimeout(timer);
