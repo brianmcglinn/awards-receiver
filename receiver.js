@@ -130,7 +130,7 @@ function checkLocalReachability(baseUrl, token) {
       settled = true;
       resolve(false);
     }, LOCAL_AUDIO_TIMEOUT_MS);
-    fetch(`${baseUrl}/?X-Plex-Token=${token}`, { headers: { Accept: "application/json" } })
+    fetch(`${baseUrl}/?X-Plex-Token=${token}`, { headers: { Accept: "application/json" }, cache: "no-store" })
       .then((res) => {
         if (settled) return;
         settled = true;
@@ -152,7 +152,13 @@ function deriveLocalStreamUrl(publicStreamUrl) {
   if (!localPlexBaseUrl || !localPlexReachable) return null;
   try {
     const parsed = new URL(publicStreamUrl);
-    return `${localPlexBaseUrl}${parsed.pathname}${parsed.search}`;
+    // Cache-busting param: without this, a browser that previously played
+    // this exact local URL successfully (e.g. tested at home) could serve
+    // that response from disk cache later on a network where local genuinely
+    // isn't reachable — masking a real failure as a false success.
+    const cacheBust = `_cb=${Date.now()}`;
+    const search = parsed.search ? `${parsed.search}&${cacheBust}` : `?${cacheBust}`;
+    return `${localPlexBaseUrl}${parsed.pathname}${search}`;
   } catch {
     return null;
   }
