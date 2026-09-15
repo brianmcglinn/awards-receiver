@@ -18,7 +18,7 @@ function log(...args) {
   }
 }
 
-log("Booting receiver…");
+log("Booting receiver… (build: local-audio-hardening-v2)");
 
 // ============================================================================
 // CONFIG — fill in with your new Supabase project's values (Settings -> API).
@@ -177,6 +177,8 @@ function playFromUrl(url, title) {
     .catch((err) => log("❌ Playback failed:", err.message, "(often needs one click on the page first when testing in a plain browser tab)"));
 }
 
+let localAttemptGeneration = 0; // guards against a stale event from an abandoned attempt being misread as belonging to a later one
+
 function playTrack(index) {
   if (!playlistTracks.length) return;
   playlistIndex = ((index % playlistTracks.length) + playlistTracks.length) % playlistTracks.length;
@@ -192,6 +194,7 @@ function playTrack(index) {
   // Local was already confirmed reachable at startup, but individual
   // requests can still hiccup — keep a short per-song safety net rather
   // than trusting it blindly.
+  const myGeneration = ++localAttemptGeneration;
   let settled = false;
   const cleanup = () => {
     clearTimeout(timer);
@@ -199,14 +202,21 @@ function playTrack(index) {
     audioEl.removeEventListener("error", onFail);
   };
   const onFail = () => {
-    if (settled) return;
+    if (settled || myGeneration !== localAttemptGeneration) return;
     settled = true;
     cleanup();
+    // Explicitly abort the stalled load rather than just redirecting it —
+    // the shared <audio> element otherwise risks a slow/abandoned local
+    // request finishing in the background later and firing a "playing"
+    // event that gets misread as belonging to whatever plays next.
+    audioEl.pause();
+    audioEl.removeAttribute("src");
+    audioEl.load();
     log("Local audio didn't come through, falling back to public URL:", track.title);
     playFromUrl(track.streamUrl, track.title);
   };
   const onPlaying = () => {
-    if (settled) return;
+    if (settled || myGeneration !== localAttemptGeneration) return;
     settled = true;
     cleanup();
     log("▶️ Playing via local URL:", track.title);
