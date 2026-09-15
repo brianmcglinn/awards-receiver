@@ -25,8 +25,8 @@ log("Booting receiver… (build: local-audio-hardening-v2)");
 // Served publicly from GitHub Pages, same as your other custom receivers.
 // ============================================================================
 const CONFIG = {
-  SUPABASE_URL: "https://njmhtzlarzxghldpnkct.supabase.co",
-  SUPABASE_ANON_KEY: "sb_publishable_Malyz9S1E2VvxZD98T69tg_jjDSb8Ea",
+  SUPABASE_URL: "https://supabase.picklevision.net",
+  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg3NDEzMTM5LCJleHAiOjE5NDUwOTMxMzl9.UYPmuRq3AqdsewwEdya3sEc91Z3VfS12o1cH8IBq2hU",
 };
 
 if (CONFIG.SUPABASE_URL.includes("YOUR-PROJECT") || CONFIG.SUPABASE_ANON_KEY.includes("YOUR-ANON")) {
@@ -80,7 +80,9 @@ try {
 // ============================================================================
 // SUPABASE
 // ============================================================================
-const sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+const sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, {
+  db: { schema: "awards_banquet" },
+});
 log("Supabase client created for", CONFIG.SUPABASE_URL);
 
 // ============================================================================
@@ -490,11 +492,11 @@ async function renderCurrentState() {
 renderCurrentState();
 
 sb.channel("receiver-sync")
-  .on("postgres_changes", { event: "*", schema: "public", table: "live_state" }, () => {
+  .on("postgres_changes", { event: "*", schema: "awards_banquet", table: "live_state" }, () => {
     log("📡 live_state changed.");
     renderCurrentState();
   })
-  .on("postgres_changes", { event: "*", schema: "public", table: "award_nominees" }, renderCurrentState)
-  .on("postgres_changes", { event: "*", schema: "public", table: "owners" }, renderCurrentState)
-  .on("postgres_changes", { event: "*", schema: "public", table: "outro_entries" }, renderCurrentState)
+  .on("postgres_changes", { event: "*", schema: "awards_banquet", table: "award_nominees" }, renderCurrentState)
+  .on("postgres_changes", { event: "*", schema: "awards_banquet", table: "owners" }, renderCurrentState)
+  .on("postgres_changes", { event: "*", schema: "awards_banquet", table: "outro_entries" }, renderCurrentState)
   .subscribe((status) => log("Realtime subscription status:", status));
